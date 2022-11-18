@@ -1,57 +1,39 @@
-exports.handler = async function http(req) {
-
-  let html = `
-<!doctype html>
-<html lang=en>
-  <head>
-    <meta charset=utf-8>
-    <title>Hi!</title>
-    <link rel="stylesheet" href="https://static.begin.app/starter/default.css">
-    <link href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" rel="icon" type="image/x-icon">
-  </head>
-  <body>
-
-    <h1 class="center-text">
-      <!-- ↓ Change "Hello world!" to something else and head on back to Begin! -->
-      Hello world!
-    </h1>
-
-    <p class="center-text">
-      Your <a href="https://begin.com" class="link" target="_blank">Begin</a> app is ready to go!
-    </p>
-
-  </body>
-</html>`
-
-  return {
-    headers: {
-      'content-type': 'text/html; charset=utf8',
-      'cache-control': 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0'
-    },
-    statusCode: 200,
-    body: html
-  }
-}
-
-// Other example responses
-
-/* Forward requester to a new path
-exports.handler = async function http (req) {
-  return {
-    statusCode: 302,
-    headers: {'location': '/about'}
-  }
-}
-*/
-
-/* Respond with successful resource creation, CORS enabled
 let arc = require('@architect/functions')
-exports.handler = arc.http.async (http)
-async function http (req) {
-  return {
-    statusCode: 201,
-    json: { ok: true },
-    cors: true,
+let fetch=require('node-fetch')
+const https = require("https");
+const agent = new https.Agent({
+  rejectUnauthorized: false
+})
+exports.handler = async function http(req) {
+console.log(req)
+if(req.requestContext.http.method!='GET'&&req.requestContext.http.method!='HEAD'){
+  body= arc.http.helpers.bodyParser(req)}else{
+    body=null
   }
+headers=req.headers
+headers.referer=req.queryStringParameters.url //forge
+if(req.queryStringParameters.url.startsWith('https://')){
+  newhost=req.queryStringParameters.url.split('https://')[1].split('/')[0]
+}else{
+  newhost=req.queryStringParameters.url.split('/')[0]
 }
-*/
+headers.host=newhost
+let resp=await fetch(req.queryStringParameters.url,{  method: req.requestContext.http.method,
+headers: headers,        // request headers. format is the identical to that accepted by the Headers constructor (see below)
+body: body,         // request body. can be null, a string, a Buffer, a Blob, or a Node.js Readable stream
+redirect: 'follow', // set to `manual` to extract redirect headers, `error` to reject redirect
+//signal: null,
+agent:agent
+     })
+     bodytext=await resp.text()
+     
+     const rheaders = [...resp.headers.entries()].reduce((obj, [key, value]) => (obj[key.toLowerCase()] = value, obj), {})
+     rheaders['x-frame-options']='sameorigin'
+     rheaders['access-control-allow-origin']='*'
+    console.log(rheaders)
+return{
+  statusCode:resp.status,
+  headers:{'content-type':rheaders['content-type'],'set-cookie':rheaders['set-cookie']},
+  body:bodytext
+}
+}
