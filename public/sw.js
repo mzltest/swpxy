@@ -8,7 +8,7 @@ this.addEventListener('fetch', function(event) {
     oldurl=oldurl.replace(myhost,'')
     oldurl=currhost+oldurl
  }
- if(event.request.mode!='navigate' || event.request.url.indexOf(myhost)==-1){
+ if(event.request.mode!='navigate' ){
     newurl=myhost+"/go?url="+encodeURIComponent(oldurl)
 }else{newurl=oldurl}
 
